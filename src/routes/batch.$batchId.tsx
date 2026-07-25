@@ -181,6 +181,16 @@ function BatchOverview({ batchId }: { batchId: string }) {
                   {details.byName && (
                     <p className="mt-1 text-sm text-muted-foreground">{details.byName}</p>
                   )}
+                  <div className="mt-2.5 flex items-center gap-2">
+                    {details.feeTotal ? (
+                      <span className="text-base font-semibold text-muted-foreground line-through decoration-red-500 decoration-2">
+                        ₹{details.feeTotal.toLocaleString()}
+                      </span>
+                    ) : null}
+                    <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30 shadow-glow">
+                      FREE
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -255,6 +265,12 @@ function TodaysLiveClass({ items }: { items: ScheduleItem[] }) {
   const scrollBy = (delta: number) => {
     scrollerRef.current?.scrollBy({ left: delta, behavior: "smooth" });
   };
+  const occurredCount = items.filter((i) => {
+    const s = computeLiveStatus(i);
+    return s === "ENDED" || s === "LIVE";
+  }).length;
+  const cancelledCount = items.length - occurredCount;
+
   return (
     <div className="rounded-3xl glass p-4 shadow-premium">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -265,7 +281,7 @@ function TodaysLiveClass({ items }: { items: ScheduleItem[] }) {
           <div className="min-w-0">
             <h3 className="text-base font-bold">Today's Live Class</h3>
             <p className="text-xs text-muted-foreground">
-              {`${items.length} class${items.length === 1 ? "" : "es"} scheduled`}
+              {`${items.length} class${items.length === 1 ? "" : "es"} (${occurredCount} occurred${cancelledCount > 0 ? `, ${cancelledCount} cancelled` : ""})`}
             </p>
           </div>
         </div>
@@ -299,10 +315,11 @@ function TodaysLiveClass({ items }: { items: ScheduleItem[] }) {
   );
 }
 
-function computeLiveStatus(item: ScheduleItem): "LIVE" | "ENDED" | "UPCOMING" {
+function computeLiveStatus(item: ScheduleItem): "LIVE" | "ENDED" | "CANCELLED" {
   const raw = String(item.status ?? "").toUpperCase();
   if (raw === "LIVE" || raw === "STARTED") return "LIVE";
   if (raw === "COMPLETED" || raw === "ENDED") return "ENDED";
+  if (raw === "CANCELLED" || raw === "CANCELED") return "CANCELLED";
 
   const parseTime = (t?: string) => {
     if (!t) return null;
@@ -321,7 +338,9 @@ function computeLiveStatus(item: ScheduleItem): "LIVE" | "ENDED" | "UPCOMING" {
   const now = Date.now();
   if (start && now >= start && end && now < end) return "LIVE";
   if (end && now >= end) return "ENDED";
-  return "UPCOMING";
+  if (item.videoDetails?.videoUrl || item.url) return "ENDED";
+
+  return "CANCELLED";
 }
 
 function LiveClassCard({ item, index }: { item: ScheduleItem; index: number }) {
@@ -334,6 +353,7 @@ function LiveClassCard({ item, index }: { item: ScheduleItem; index: number }) {
   const status = computeLiveStatus(item);
   const isLive = status === "LIVE";
   const isEnded = status === "ENDED";
+  const isCancelled = status === "CANCELLED";
   const time = formatClassTime(item);
   const tagId = item.tags?.[0]?._id ?? "live";
   const subjectId = (item as { batchSubjectId?: string }).batchSubjectId ?? "live";
@@ -353,12 +373,14 @@ function LiveClassCard({ item, index }: { item: ScheduleItem; index: number }) {
     ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/40"
     : isEnded
       ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40"
-      : "gradient-primary text-primary-foreground shadow-glow";
+      : "bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/40 font-bold";
 
   return (
     <a
-      href={playerUrl}
-      className="snap-start block w-64 shrink-0 overflow-hidden rounded-2xl glass-strong shadow-premium animate-fade-up transition-all hover:-translate-y-0.5 hover:shadow-glow"
+      href={isCancelled && !(item.url || item.videoDetails?.videoUrl) ? undefined : playerUrl}
+      className={`snap-start block w-64 shrink-0 overflow-hidden rounded-2xl glass-strong shadow-premium animate-fade-up transition-all hover:-translate-y-0.5 hover:shadow-glow ${
+        isCancelled ? "opacity-90" : ""
+      }`}
       style={{ animationDelay: `${index * 40}ms` }}
     >
       <div className="relative aspect-video bg-surface-elevated">
@@ -376,7 +398,7 @@ function LiveClassCard({ item, index }: { item: ScheduleItem; index: number }) {
       <div className="space-y-2 p-3">
         <div className="flex items-center justify-between gap-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${badgeClass}`}
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] uppercase tracking-wide ${badgeClass}`}
           >
             {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />}
             {status}

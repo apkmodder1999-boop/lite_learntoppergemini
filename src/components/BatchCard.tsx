@@ -57,9 +57,22 @@ export function BatchCard({ batch, index = 0 }: { batch: Batch; index?: number }
             )}
           </div>
           <div className="flex items-center justify-between pt-1">
-            <span className="text-sm font-semibold text-success">
-              {batch.feeTotal ? `₹${batch.feeTotal.toLocaleString()}` : "FREE"}
-            </span>
+            <div className="flex items-center gap-2">
+              {batch.feeTotal ? (
+                <>
+                  <span className="text-sm font-medium text-muted-foreground line-through decoration-red-500 decoration-2">
+                    ₹{batch.feeTotal.toLocaleString()}
+                  </span>
+                  <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30">
+                    FREE
+                  </span>
+                </>
+              ) : (
+                <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30">
+                  FREE
+                </span>
+              )}
+            </div>
             <span className="inline-flex items-center gap-1.5 rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-transform group-hover:translate-x-0.5">
               Start Learning <ArrowRight className="h-3.5 w-3.5" />
             </span>
