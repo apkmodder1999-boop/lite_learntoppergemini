@@ -122,7 +122,7 @@ export function formatDate(iso?: string) {
 
 export const EXTERNAL_PLAYER = {
   // External Vidcloud player.
-  base: "https://vidyaverse-pw2.vercel.app",
+  base: "https://vidyaverse-pw2.vercel.app/play.php",
 };
 
 export type PlayerSearch = {
